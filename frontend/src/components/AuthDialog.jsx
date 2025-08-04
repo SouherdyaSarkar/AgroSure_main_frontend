@@ -111,7 +111,7 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
       {/* Replaces DialogContent */}
       <div className="relative w-full max-w-md rounded-lg border bg-agricultural-soft-sand border-agricultural-stone-gray/20 p-6 shadow-lg sm:max-w-md" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={onClose}
+          onClick={() => setIslogin(false)}
           className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
         >
           <svg

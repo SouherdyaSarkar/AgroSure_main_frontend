@@ -185,32 +185,56 @@ const InsuranceClaim = ({ user, onBack }) => {
     }
   };
 
+
+
   const handleAiPrediction = async () => {
     setIsLoadingAi(true);
     setGeminiResponse('');
-    
     try {
       // Check if a policy document is uploaded
       if (!formData.policyDocument) {
-        alert('Please upload a policy document first.');
-        setIsLoadingAi(false);
+        alert("Upload a policy document to continue!");
         return;
       }
 
       // Check if it's a text file
-      if (!formData.policyDocument.type.includes('text') && !formData.policyDocument.name.endsWith('.txt')) {
-        alert('Please upload a text file (.txt) for policy summarization.');
-        setIsLoadingAi(false);
+       if (formData.policyDocument.type.includes('text') || formData.policyDocument.name.endsWith('.txt')) {
+        console.log("Processing text file: ", formData.policyDocument);
+      // Call the summarizeTxtFile function
+        const response = await summarizeTxtFile(formData.policyDocument);
+        setGeminiResponse(response);
         return;
       }
 
-      console.log("Processing text file: ", formData.policyDocument);
-      
-      // Call the summarizeTxtFile function
-      const response = await summarizeTxtFile(formData.policyDocument);
-      setGeminiResponse(response);
-      
-    } catch (error) {
+      //Chekc for pdf
+      if (formData.policyDocument.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+          console.log("Uploading PDF for extraction: ", formData.policyDocument);
+
+          const formDataToSend = new FormData();
+          formDataToSend.append('policy_file', formData.policyDocument);
+          const extractedResponse = await fetch(`${import.meta.env.VITE_FASTAPI_URL}/verify-policy`,
+            {
+              method: 'POST',
+              body:formDataToSend
+            
+            });
+
+            if (!extractedResponse.ok) {
+            throw new Error('Failed to extract text from PDF.');
+          }
+
+        const blob = await extractedResponse.blob();
+
+        // Convert blob to a File object to reuse summarizeTxtFile
+        const extractedTxtFile = new File([blob], 'extracted.txt', { type: 'text/plain' });
+
+        console.log("Extracted .txt file from PDF: ", extractedTxtFile);
+
+        const summary = await summarizeTxtFile(extractedTxtFile);
+        setGeminiResponse(summary);
+
+        }
+      }catch (error) {
       console.error('Error processing text file:', error);
       setGeminiResponse('Failed to process the policy document. Please try again.');
     } finally {

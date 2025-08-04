@@ -13,12 +13,11 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
     password: ''
   });
   const [formData, setFormData] = useState({
-    uid : userid ? userid : '',
     name: '',
     phone: '',
     email: '',
     password: '',
-    totalLand: '',
+    totalLand: 0,
     locationLat: '',
     locationLong: '',
     crops: '',
@@ -61,30 +60,35 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
           const user = await signUpUser(email, password);
           setuserid(user.uid);
           console.log("Account created succesfully! Leading to DB storage");
-          handleSubmit();
-          // redirect or show message
+          handleSubmit(user.uid);
         } catch (err) {
           console.log(err.message);
         }
       };
 
-  const handleSubmit = async() => {
+  const handleSubmit = async(uid) => {
       // Mock registration
       const payload = {
-        uid : userid ? userid : '',
+        uid : uid,
         name: formData.name || "Souherdya Sarkar",
         email : formData.email || "souherdyasarkar@gmail.com",
-        totalLand: formData.totalLand || '5 acre',
+        totalLand: formData.totalLand || 3,
         locationLat: formData.locationLat || '22.572645',
         locationLong: formData.locationLong || '88.363892',
         crops: formData.crops.split(',').map(crop => crop.trim()) || ['Rice','Wheat','Paddy'],
         phone: formData.phone || 8910169299,
+        aadhar: formData.aadhar
       }
+
+      console.log("Payload: ", payload);
 
       try{
         
-      const response = await fetch("Backend_URI/route",{
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/register`,{
         method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',  // <-- Required for JSON body
+      },
         body: JSON.stringify(payload)
       });
       if(response.ok){
@@ -108,10 +112,11 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
   return (
     // Replaces Dialog component
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
-      {/* Replaces DialogContent */}
-      <div className="relative w-full max-w-md rounded-lg border bg-agricultural-soft-sand border-agricultural-stone-gray/20 p-6 shadow-lg sm:max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="relative max-w-[95%] md:max-w-[50%] z-100 rounded-lg border bg-agricultural-soft-sand
+       border-agricultural-stone-gray/20 p-6 shadow-lg" 
+       onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={() => setIslogin(false)}
+          onClick={onClose}
           className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
         >
           <svg
@@ -132,19 +137,19 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
           <span className="sr-only">Close</span>
         </button>
 
-        <div
+        {/* <div
           className="absolute inset-0 opacity-10 bg-cover bg-center rounded-lg"
           style={{
             backgroundImage: 'url("https://images.unsplash.com/photo-1500076656116-558758c991c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80")'
           }}
-        />
+        /> */}
 
         <div className="relative z-10">
-          {/* Replaces DialogHeader */}
+          
           <div className="text-center mb-6">
             <div className="flex items-center justify-center space-x-2 mb-2">
               <Leaf className="h-8 w-8 text-agricultural-forest-green" />
-              {/* Replaces DialogTitle */}
+              
               <h2 className="text-2xl font-bold text-agricultural-soil-brown">
                 AgriFinance
               </h2>
@@ -156,19 +161,21 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
 
           {/* Replaces Tabs */}
           <div className="flex flex-col">
-            {/* Replaces TabsList */}
-            <div className="grid w-full grid-cols-2 mb-6 bg-white rounded-md p-1">
+            
+            <div className="grid w-full grid-cols-2 mb-6 bg-white rounded-md gap-4 py-1 px-4">
               {/* Replaces TabsTrigger for Login */}
               <button
                 onClick={() => setIsLogin(true)}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${isLogin ? 'bg-agricultural-forest-green text-white' : 'text-agricultural-stone-gray hover:text-agricultural-soil-brown'}`}
+                className={`flex-1 px-8 py-2 
+                text-sm font-medium rounded-md transition-colors 
+                ${isLogin ? 'bg-agricultural-forest-green text-white' : 'text-agricultural-stone-gray hover:text-agricultural-soil-brown'}`}
               >
                 Login
               </button>
               {/* Replaces TabsTrigger for Register */}
               <button
                 onClick={() => setIsLogin(false)}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${!isLogin ? 'bg-agricultural-forest-green text-white' : 'text-agricultural-stone-gray hover:text-agricultural-soil-brown'}`}
+                className={`flex-1 px-8 py-2 text-sm font-medium rounded-md transition-colors ${!isLogin ? 'bg-agricultural-forest-green text-white' : 'text-agricultural-stone-gray hover:text-agricultural-soil-brown'}`}
               >
                 Register
               </button>
@@ -211,32 +218,37 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
                 </div>
               )}
 
+
+
               {/* Replaces TabsContent for Register */}
               {!isLogin && (
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <label htmlFor="name" className="text-agricultural-soil-brown font-medium text-sm block">
-        Full Name
-      </label>
-      <div className="relative">
-        <User className="absolute left-3 top-3 h-4 w-4 text-agricultural-stone-gray" />
-        <input
-          id="name"
-          placeholder="Enter your full name"
-          className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-10"
-          value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          required
-        />
-      </div>
-    </div>
+            <div className="space-y-4">
+
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-agricultural-soil-brown font-medium text-sm block">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-agricultural-stone-gray" />
+                <input
+                  id="name"
+                  placeholder="Enter your full name"
+                  className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-10"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
 
     {/* New Email Field */}
-    <div className="space-y-2">
+    <div className="block md:flex gap-4 w-full">
+    <div className='flex flex-[1] flex-col'>
       <label htmlFor="email" className="text-agricultural-soil-brown font-medium text-sm block">
         Email Address
       </label>
-      <div className="relative">
+      <div className="relative mb-4 md:mb-0">
         {/* You might want an email icon here, for example: <Mail className="absolute left-3 top-3 h-4 w-4 text-agricultural-stone-gray" /> */}
         <input
           id="email"
@@ -248,37 +260,74 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
           required
         />
       </div>
-    </div>
-
-    <div className="space-y-2">
-      <label htmlFor="phone" className="text-agricultural-soil-brown font-medium text-sm block">
-        Phone Number
-      </label>
-      <div className="relative">
-        <Phone className="absolute left-3 top-3 h-4 w-4 text-agricultural-stone-gray" />
-        <input
-          id="phone"
-          placeholder="+91 98765 43210"
-          className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-10"
-          value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-          required
-        />
       </div>
+      
+      <div className='flex flex-[1] flex-col'>
+      <label htmlFor="registerPassword" className="text-agricultural-soil-brown font-medium text-sm block">
+        Create Password
+      </label>
+      <input
+        id="registerPassword"
+        type="password"
+        placeholder="password"
+        className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background
+        px-3 py-2 text-sm ring-offset-background file:border-0 
+        file:bg-transparent file:text-sm file:font-medium 
+        placeholder:text-muted-foreground focus-visible:outline-none 
+        focus-visible:ring-2 focus-visible:ring-agricultural-forest-green 
+        focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        value={formData.password}
+        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+        required
+      />
+      </div>
+
     </div>
 
-    <div className="space-y-2">
-      <label htmlFor="landSize" className="text-agricultural-soil-brown font-medium text-sm block">
+
+    <div className='flex flex-row gap-4 w-full'>
+
+    <div className='flex flex-[1] flex-col'>
+      <label htmlFor="landSize" className="text-agricultural-soil-brown mb-2 font-medium text-sm block">
         Land Size (Acres)
       </label>
       <input
         id="landSize"
+        type='number'
         placeholder="e.g., 12.5"
-        className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full
+        rounded-md border border-agricultural-stone-gray/30 bg-background
+        px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent
+           file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none
+            focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2
+             disabled:cursor-not-allowed disabled:opacity-50"
         value={formData.landSize}
         onChange={(e) => setFormData(prev => ({ ...prev, landSize: e.target.value }))}
         required
       />
+    </div>
+
+    <div className='flex flex-[1] flex-col'>
+    
+      <label htmlFor="crops" className="text-agricultural-soil-brown font-medium mb-2 text-sm block">
+        Crops Grown
+      </label>
+      <input
+        id="crops"
+        placeholder="e.g., Wheat, Rice, Cotton"
+        className="flex h-10 w-full rounded-md border
+         border-agricultural-stone-gray/30 bg-background
+          px-3 py-2 text-sm ring-offset-background
+           file:border-0 file:bg-transparent file:text-sm file:font-medium
+            placeholder:text-muted-foreground focus-visible:outline-none 
+            focus-visible:ring-2 focus-visible:ring-agricultural-forest-green 
+            focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        value={formData.crops}
+        onChange={(e) => setFormData(prev => ({ ...prev, crops: e.target.value }))}
+        required
+      />
+    </div>
+
     </div>
 
     <div className="space-y-2">
@@ -304,33 +353,56 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }) => {
       )}
     </div>
 
-    <div className="space-y-2">
-      <label htmlFor="crops" className="text-agricultural-soil-brown font-medium text-sm block">
-        Crops Grown
+    
+      <div className='block md:flex gap-4 w-full'>
+    <div className="flex flex-col mb-4 md:mb-0">
+
+      <label htmlFor="phone" className="text-agricultural-soil-brown mb-2 font-medium text-sm block">
+        Phone Number
       </label>
-      <input
-        id="crops"
-        placeholder="e.g., Wheat, Rice, Cotton"
-        className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        value={formData.crops}
-        onChange={(e) => setFormData(prev => ({ ...prev, crops: e.target.value }))}
-        required
-      />
+      <div className="relative">
+       
+        <input
+          id="phone"
+          placeholder="+91 98765 43210"
+          className="flex h-10 w-full rounded-md border
+           border-agricultural-stone-gray/30 bg-background
+            px-3 py-2 text-sm ring-offset-background file:border-0 
+            file:bg-transparent file:text-sm file:font-medium
+             placeholder:text-muted-foreground focus-visible:outline-none
+              focus-visible:ring-2 focus-visible:ring-agricultural-forest-green
+               focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-3"
+          value={formData.phone}
+          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+          required
+        />
+      </div>
+
     </div>
 
-    <div className="space-y-2">
-      <label htmlFor="registerPassword" className="text-agricultural-soil-brown font-medium text-sm block">
-        Create Password
+    <div className="flex flex-col">
+
+      <label htmlFor="phone" className="text-agricultural-soil-brown mb-2 font-medium text-sm block">
+        Aadhar number
       </label>
-      <input
-        id="registerPassword"
-        type="password"
-        placeholder="Create a secure password"
-        className="flex h-10 w-full rounded-md border border-agricultural-stone-gray/30 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-agricultural-forest-green focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        value={formData.password}
-        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-        required
-      />
+      <div className="relative">
+        <input
+          id="aadhar"
+          placeholder="1234-5678-9012"
+          className="flex h-10 w-full rounded-md border
+           border-agricultural-stone-gray/30 bg-background
+            px-3 py-2 text-sm ring-offset-background file:border-0 
+            file:bg-transparent file:text-sm file:font-medium
+             placeholder:text-muted-foreground focus-visible:outline-none
+              focus-visible:ring-2 focus-visible:ring-agricultural-forest-green
+               focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-3"
+          value={formData.aadhar}
+          onChange={(e) => setFormData(prev => ({ ...prev, aadhar: e.target.value }))}
+          required
+        />
+      </div>
+
+    </div>
     </div>
   </div>
 )}

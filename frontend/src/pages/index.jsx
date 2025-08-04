@@ -68,12 +68,26 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-agricultural-soft-sand">
+    <div className="min-h-screen w-[100%] bg-agricultural-soft-sand">
+
+    <div className='w-[100%] h-[100%] z-100'>
+    <AuthDialog
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onLogin={(email,password) => handleSignin(email,password)}
+        // onRegister={(email,password)=>handleSignup(email,password)}
+      />
+    </div>
+
+
       {/* Navigation */}
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-agricultural-stone-gray/20 sticky top-0 z-50">
-      <SimpleGoogleTranslate />
+      <nav className="bg-white/95 backdrop-blur-sm border-b
+       border-agricultural-stone-gray/20 sticky top-0">
+
+      
       
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Leaf className="h-8 w-8 text-agricultural-forest-green" />
@@ -101,13 +115,14 @@ const Index = () => {
           }}
         >
           <div className="absolute inset-0 hero-gradient"></div>
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+
+          <div className="relative flex z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full items-center">
             <div className="max-w-3xl text-white animate-fade-in">
-              <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
                 Empowering Farmers with
                 <span className="block text-agricultural-harvest-gold">Data-Backed Financial Support</span>
               </h1>
-              <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed">
+              <p className="text-md md:text-2xl mb-8 text-white/90 leading-relaxed">
                 Get accurate yield predictions and secure agricultural loans with confidence.
                 Our AI-powered platform helps you make informed farming decisions.
               </p>
@@ -295,12 +310,7 @@ const Index = () => {
         </div>
       </footer>
 
-      <AuthDialog
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onLogin={(email,password) => handleSignin(email,password)}
-        onRegister={(email,password)=>handleSignup(email,password)}
-      />
+      
     </div>
   );
 };

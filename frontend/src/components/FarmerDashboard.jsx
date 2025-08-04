@@ -27,12 +27,14 @@ import { useNavigate } from 'react-router-dom';
 import PastReports from "./pastRecords";
 import KisaanSaathi from "./kisaanSaathi";
 import {Menu} from 'lucide-react';
+import axios from 'axios';
 
 const FarmerDashboard = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [yieldResults, setYieldResults] = useState(null);
   const [newsData, setNewsData] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [farmingNews,setFarmingNews] = useState();
   const navigate = useNavigate();
   const [userData, setUserData] = useState({
     uid: '',
@@ -66,12 +68,32 @@ const FarmerDashboard = ({ user, onLogout }) => {
     }
   });
 
+  const getDateRange = () => {
+  const today = new Date();
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(today.getDate() - 14);
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = (`0${date.getMonth() + 1}`).slice(-2); // Months are 0-based
+    const day = (`0${date.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    endDate: formatDate(today),
+    startDate: formatDate(fourteenDaysAgo),
+  };
+}
+
   // useEffect(()=>{
   //   console.log("Starting news API call...");
-  //   axios.get("https://newsdata.io/api/1/news?apikey=pub_71393425f2eb107bc20c5e467f4599218c164&q=Agriculture&country=in")
+  //   const {endDate, startDate} = getDateRange();
+
+  //   axios.get(`https://newsdata.io/api/1/latest?apikey=${import.meta.env.VITE_NEWS_API}&q=indian%20agriculture`)
   //     .then((response)=>{
   //       console.log("News API response received:", response);
-  //       setNewsData(response.data.results);
+  //       setNewsData(response.data);
   //       console.log("News data : ", response.data);
   //     })
   //     .catch((error) => {
@@ -83,7 +105,6 @@ const FarmerDashboard = ({ user, onLogout }) => {
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
-      console.log('Window width:', window.innerWidth, 'isMobile:', mobile);
       setIsMobile(mobile);
     };
 
@@ -100,10 +121,7 @@ const FarmerDashboard = ({ user, onLogout }) => {
     try {
       await signOut(auth);
       console.log('User signed out successfully');
-      if (onLogout) {
-        onLogout();
-        navigate('/');
-      }
+      navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -115,127 +133,86 @@ const FarmerDashboard = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
-     try{
-      onAuthStateChanged(auth, (user) => {
-        if(user){
-          console.log("Fetch called");
-          console.log(user.uid);
-          const response = fetch(`${import.meta.env.VITE_BACKEND_URL}/user/dashboard/${user.uid}`,{
-            method: 'GET',
-          })
-          .then(response => {
-            console.log("DB fetch response:", response);
-            return response.json();
-          })
-          .then(data => {
-            console.log("Parsed response data:", data);
-            setUserData(data);
-            setDisplayData(data);
-            console.log("DB fetch success, setting display data : ", data);
-          })
-          .catch(error => {
-            console.error('Error fetching farmer data:', error);
-            try {
-              const dummy_data = JSON.parse(localStorage.getItem("mock_userData"));
-              if (dummy_data) {
-                setDisplayData(dummy_data);
-                console.log("DB fetch failed, setting mock data from localStorage:", dummy_data);
-              } else {
-                // Fallback to hardcoded mock data if localStorage is empty
-                const fallbackData = {
-                  user: {
-                    uid: 'd7m74KoesWRw9bdXceJboC7vbUu1',
-                    name: 'Souherdya Sarkar',
-                    email: 'souherdya@gmail.com',
-                    totalLand: 5,
-                    crops: ['Wheat', 'Rice', 'Maize'],
-                    locationLat: 22.5726,
-                    locationLong: 88.3639,
-                    isSmallFarmer: true,
-                    phone: '9876543210',
-                    aadhar: '123456789012',
-                  }
-                };
-                setDisplayData(fallbackData);
-                console.log("DB fetch failed, setting hardcoded fallback data:", fallbackData);
-                localStorage.setItem("mock_userData", JSON.stringify(fallbackData));
-              }
-            } catch (localStorageError) {
-              console.error('Error parsing localStorage data:', localStorageError);
-              // Fallback to hardcoded mock data if localStorage parsing fails
-              const fallbackData = {
-                user: {
-                  uid: 'd7m74KoesWRw9bdXceJboC7vbUu1',
-                  name: 'Souherdya Sarkar',
-                  email: 'souherdya@gmail.com',
-                  totalLand: 5,
-                  crops: ['Wheat', 'Rice', 'Maize'],
-                  locationLat: 22.5726,
-                  locationLong: 88.3639,
-                  isSmallFarmer: true,
-                  phone: '9876543210',
-                  aadhar: '123456789012',
-                }
-              };
-              setDisplayData(fallbackData);
-              console.log("DB fetch failed, setting hardcoded fallback data after localStorage error:", fallbackData);
-            }
-          });
-        }
+  let hasFetched = false; // ✅ Block re-entry
 
-        else{
-          console.log("Fetch called");
-          const response = fetch(`${import.meta.env.VITE_BACKEND_URL}/user/dashboard/${id}`,{
-            method: 'GET',
-          })
-          .then(response => {
-            console.log("DB fetch response:", response);
-            return response.json();
-          })
-          .then(data => {
-            console.log("Parsed response data:", data);
-            setUserData(data);
-            setDisplayData(data);
-            console.log("DB fetch success, setting display data : ", data);
-          })
-          .catch(error => {
-            console.error('Error fetching farmer data:', error);
-          });
-        }
-      });
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (hasFetched) return; // ✅ Only allow first call
+    hasFetched = true;
+
+    const uidToUse = user ? user.uid : id;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/dashboard/${uidToUse}`);
+      const data = await response.json();
+      setUserData(data);
+      setDisplayData(data);
     } catch (error) {
       console.error('Error fetching farmer data:', error);
+
+      try {
+        const dummy_data = JSON.parse(localStorage.getItem("mock_userData"));
+        if (dummy_data) {
+          setDisplayData(dummy_data);
+          console.log("Using mock data from localStorage.");
+        } else {
+          const fallbackData = {
+            user: {
+              uid: 'd7m74KoesWRw9bdXceJboC7vbUu1',
+              name: 'Souherdya Sarkar',
+              email: 'souherdya@gmail.com',
+              totalLand: 5,
+              crops: ['Wheat', 'Rice', 'Maize'],
+              locationLat: 22.5726,
+              locationLong: 88.3639,
+              isSmallFarmer: true,
+              phone: '9876543210',
+              aadhar: '123456789012',
+            }
+          };
+          setDisplayData(fallbackData);
+          localStorage.setItem("mock_userData", JSON.stringify(fallbackData));
+        }
+      } catch (localStorageError) {
+        console.error('LocalStorage fallback failed:', localStorageError);
+      }
     }
-  }, []);
+  });
 
-  // Debug useEffect to track displayData changes
-  useEffect(() => {
-    console.log("displayData state updated:", displayData);
-  }, [displayData]);
+  return () => {
+    unsubscribe();
+    console.log('Unsubscribed from Firebase Auth listener.');
+  };
+}, []);
 
-  // Debug useEffect to track isMobile changes
-  useEffect(() => {
-    console.log("isMobile state changed to:", isMobile);
-  }, [isMobile]);
+function getRelativeTime(pubDate) {
+  const now = new Date();
+  const published = new Date(pubDate);
+  const diffMs = now - published;
 
-  // Mock data for farming feed
-  const farmingNews = [
-    {
-      title: "Wheat prices increase by 12% in North India",
-      time: "2 hours ago",
-      type: "price-update"
-    },
-    {
-      title: "New government subsidy for organic farming announced",
-      time: "5 hours ago",
-      type: "policy"
-    },
-    {
-      title: "Weather alert: Heavy rainfall expected next week",
-      time: "1 day ago",
-      type: "weather"
-    }
-  ];
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours   = Math.floor(minutes / 60);
+  const days    = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  return `Just now`;
+}
+
+// Safely generate the farmingNews array from newsData
+useEffect(() => {
+  if (!newsData || !newsData.results) return;
+
+  const mappedNews = newsData.results.slice(0, 10).map((item) => ({
+    title: item.title || "Some_random_title",
+    time: getRelativeTime(item.pubDate),
+    type: newsData.source_name || "general",
+  }));
+
+  setFarmingNews(mappedNews); // Assuming you want to use state here
+}, [newsData]);
+
 
   const weatherData = {
     today: { temp: "28°C", condition: "Sunny", icon: Sun },
@@ -472,8 +449,8 @@ const FarmerDashboard = ({ user, onLogout }) => {
                       </h3>
                     </div>
                     {/* Replaces CardContent */}
-                    <div className="p-6 pt-0 space-y-4">
-                      {farmingNews.map((news, index) => (
+                    <div className="p-6 pt-0 max-h-[40vh] overflow-y-auto space-y-4">
+                      {farmingNews?.map((news, index) => (
                         <div key={index} className="border-b border-agricultural-stone-gray/20 last:border-0 pb-4 last:pb-0">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-medium text-agricultural-soil-brown text-sm">

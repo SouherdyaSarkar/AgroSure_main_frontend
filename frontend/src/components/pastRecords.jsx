@@ -71,6 +71,21 @@ const PastReports = ({ user, onBack }) => {
     location: item.location ? `${item.location.lat}, ${item.location.long}` : 'Location not set'
   }));
 
+  const transformedInsuranceHistory = (insuranceHistory || []).map((item, index) => ({
+    id: item._id || `YP${String(index + 1).padStart(3, '0')}`,
+    crop: item.cropName.charAt(0).toUpperCase() + item.cropName.slice(1) || 'Unknown Crop',
+    landSize: `${item.acresOfLand || 0} acres`,
+    predictedYield: `${item.predictedYieldKgPerAcre || 0} kg/acre`,
+    actualYield: item.actualYield ? `${item.actualYield} kg/acre` : 'Pending',
+    accuracy: item.climateScore ? `${item.climateScore}%` : '-',
+    season: item.soilHealthCategory || 'Unknown Season',
+    predictionDate: item.expectedHarvestDate ? new Date(item.expectedHarvestDate).toLocaleDateString() : 'Unknown Date',
+    status: item.status || 'Completed',
+    soilType: item.soilType || 'Not specified',
+    irrigationMethod: item.irrigationMethod || 'Not specified',
+    location: item.location ? `${item.location.lat}, ${item.location.long}` : 'Location not set'
+  }));
+
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -130,7 +145,9 @@ const PastReports = ({ user, onBack }) => {
               </h2>
             </div>
             <div className="space-y-4"> {/* CardContent equivalent */}
-              {loanHistory.map((loan) => (
+
+              {transformedInsuranceHistory.length > 0 ? (
+                transformedInsuranceHistory.map((prediction) => (
                 <div
                   key={loan.id}
                   className="bg-white rounded-lg p-4 border border-agricultural-stone-gray/20 hover:shadow-md transition-shadow"
@@ -169,8 +186,15 @@ const PastReports = ({ user, onBack }) => {
                     </div>
                   </div>
                 </div>
-              ))}
+              ))) : (
+                <div className="text-center py-8 text-agricultural-stone-gray">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 text-agricultural-stone-gray/50" />
+                  <p>No insurace claims found</p>
+                  <p className="text-sm">Your Claims will appear here</p>
+                </div>
+              )}
             </div>
+            
           </div>
         </div>
 

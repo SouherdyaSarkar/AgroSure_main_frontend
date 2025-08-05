@@ -86,21 +86,21 @@ const FarmerDashboard = ({ user, onLogout }) => {
   };
 }
 
-  // useEffect(()=>{
-  //   console.log("Starting news API call...");
-  //   const {endDate, startDate} = getDateRange();
+  useEffect(()=>{
+    console.log("Starting news API call...");
+    const {endDate, startDate} = getDateRange();
 
-  //   axios.get(`https://newsdata.io/api/1/latest?apikey=${import.meta.env.VITE_NEWS_API}&q=indian%20agriculture`)
-  //     .then((response)=>{
-  //       console.log("News API response received:", response);
-  //       setNewsData(response.data);
-  //       console.log("News data : ", response.data);
-  //     })
-  //     .catch((error) => {
-  //       console.error("News API error:", error);
-  //       console.error("Error details:", error.response?.data || error.message);
-  //     });
-  // },[]);
+    axios.get(`https://newsdata.io/api/1/latest?apikey=${import.meta.env.VITE_NEWS_API}&q=indian%20agriculture`)
+      .then((response)=>{
+        console.log("News API response received:", response);
+        setNewsData(response.data);
+        console.log("News data : ", response.data);
+      })
+      .catch((error) => {
+        console.error("News API error:", error);
+        console.error("Error details:", error.response?.data || error.message);
+      });
+  },[]);
   
   useEffect(() => {
     const handleResize = () => {

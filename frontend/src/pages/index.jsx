@@ -84,7 +84,7 @@ const Index = () => {
       <nav className="bg-white/95 backdrop-blur-sm border-b
        border-agricultural-stone-gray/20 sticky top-0">
 
-      
+        <SimpleGoogleTranslate/>
       
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
